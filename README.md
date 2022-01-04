@@ -85,3 +85,7 @@ jCOT takes a date and a symbol as input. It searches the reports for the symbol 
 
 ## 🖥️ Modify the data shown as a result (Advanced)
 The data shown are those generally considered most relevant. However, there are many others that are not shown you might be interested in. They can be viewed by opening an Excel file contained in the 'COTData' folder. Each column will correspond to a data. For those familiar with Python programming, it is fairly easy to modify the data shown in the output, by adding more data, or removing the existent ones. Get a Python code editor and open the script. Search (usually you can do this with CTRL + F or CMD + F, but it depends on the editor) for 'Modify the output'. You should find a comment with a '#' and underneath the declaration of a result (dictionary) variable. As you can guess this is the heart of what will be shown. To delete a displayed data, simply delete the related line. To add more data you can add a ',' to the end of a line, wrap and add a new line with the format 'key': value. 'key' must be a string with superscripts. 'value' (without superscripts) will be the value of the data shown. Enter as value 'resultrow["COLUMN_NAME"]' (without superscripts) and instead of COLUMN_NAME put the name of the Excel column you want to output (mantain the quotes). 
+  
+Example:
+  
+![Example of Output Shell](https://github.com/JuliusNixi/jCOT/blob/main/img/modifydata.png?raw=true)
