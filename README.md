@@ -67,7 +67,21 @@ All these actions can be carried out through the CLI GUI, simply by opening the 
  * -d <date>: The date used for a query search. Required. Format dd/mm/yyyy.
  
  Examples of usage with shell:
- * python COTData.py -u
- * python COTData.py -l
- * python COTData.py -u -s 099741 -d 03/04/2005
- * python COTData.py -s 099741 -d 05/06/2006
+ * python jCOT.py -u
+ * python jCOT.py -l
+ * python jCOT.py -u -s 099741 -d 03/04/2005
+ * python jCOT.py -s 099741 -d 05/06/2006
+  
+Example of expected output with shell (this is the one produced by the third command in the list above, the data have been updated and a search has been requested for the symbol with code 099741 (corresponding to EURO FX) for the date 03/04/2005):
+  
+![Example of Output Shell](https://github.com/JuliusNixi/jCOT/blob/main/img/exampleresult.png?raw=true)
+  
+Example of expected output without shell, using CLI GUI:
+  
+![Example of Output GUI](https://github.com/JuliusNixi/jCOT/blob/main/img/exampleresultgui.png?raw=true)
+  
+### Understanding the result
+jCOT takes a date and a symbol as input. It searches the reports for the symbol and returns data for the most recent date to the one entered. If, for example, for the symbol EUROFX with code 099741, on 09/02/2016 data was released and also on 16/02/2016. Entering 12/02/2016 as the search date will return the most recent data available, i.e. that of 09/02/2016. If instead you enter 20/02/2016 as the date, you will get those of 16/02/2016.
+
+### Modify the data shown as a result (Advanced)
+The data shown are those generally considered most relevant. However, there are many others that are not shown you might be interested in. They can be viewed by opening an Excel file contained in the 'COTData' folder. Each column will correspond to a data. For those familiar with Python programming, it is fairly easy to modify the data shown in the output, by adding more data, or removing the existent ones. Get a Python code editor and open the script. Search (usually you can do this with CTRL + F or CMD + F, but it depends on the editor) for 'Modify the output'. You should find a comment with a '#' and underneath the declaration of a result (dictionary) variable. As you can guess this is the heart of what will be shown. To delete a displayed data, simply delete the related line. To add more data you can add a ',' to the end of a line, wrap and add a new line with the format 'key': value. 'key' must be a string with superscripts. 'value' (without superscripts) will be the value of the data shown. Enter as value 'resultrow["COLUMN_NAME"]' (without superscripts) and instead of COLUMN_NAME put the name of the Excel column you want to output (mantain the quotes). 
