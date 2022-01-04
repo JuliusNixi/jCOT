@@ -370,22 +370,3 @@ python {basename(__file__)} -s 099741 -d 05/06/2006
                 Search(indate, symbol)
 
 
-"""
-            int r = -1;
-            await Task.Run( () =>{ Process cmd = new Process();
-            cmd.StartInfo.FileName = "cmd.exe";
-            cmd.StartInfo.RedirectStandardInput = true;
-            cmd.StartInfo.RedirectStandardOutput = true;
-            cmd.StartInfo.CreateNoWindow = true;
-            cmd.StartInfo.UseShellExecute = false;
-            cmd.Start();
-            cmd.StandardInput.WriteLine("python C:\\Users\\email\\Desktop\\test.py && exit");
-            cmd.StandardInput.Flush();
-            cmd.StandardInput.Close();
-            cmd.WaitForExit();
-            string outp = cmd.StandardOutput.ReadToEnd().Split('|')[1];
-            cmd.Close();
-            r = Convert.ToInt32(outp);});
-            Result[index] = r;
-
-"""
