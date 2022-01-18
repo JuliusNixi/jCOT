@@ -168,12 +168,17 @@ def Search(indate, symbol, getlast = False):
                     break
                 prevrow = row
             if NoneRow(resultrow):
-                if indate >= lastrow:
+                r = lastrow['Report_Date_as_MM_DD_YYYY'].values[0]
+                ts = (r - datetime64('1970-01-01')) / timedelta64(1, 's')
+                td = datetime.utcfromtimestamp(ts)
+                if indate >= td:
                     resultrow = lastrow
+                    cotdate = td
                 else:
                     print("Error data not found. Press enter to exit...")
                     Exit()
-            cotdate = resultrow['Report_Date_as_MM_DD_YYYY'].to_pydatetime()
+            else:
+                cotdate = resultrow['Report_Date_as_MM_DD_YYYY'].to_pydatetime()
     except Exception as e:
         print(f"Error while processing the SearchQuery in the filename {filename}. Press enter to exit...")
         Exit()
@@ -290,7 +295,7 @@ def GetSymbols():
                 df = pd.read_excel(wb, dtype = {'CFTC_Contract_Market_Code': 'str'})
                 for index, row in df.iterrows():
                     sym = str(row['CFTC_Contract_Market_Code']) + " | " + row['Market_and_Exchange_Names']
-                    year = str(filename.replace("dea_fut_xls_", "").replace(".xls", ""))
+                    year = str(filename.replace("dea_fut_xls_", "").replace("deafut_xls_","").replace(".xls", ""))
                     found = -1
                     for i in range(len(symbols)):
                         if sym in symbols[i]:
@@ -368,5 +373,4 @@ python {basename(__file__)} -s 099741 -d 05/06/2006
                 CheckData()
             if symbol != "" and indate != "":
                 Search(indate, symbol)
-
 
