@@ -4,10 +4,10 @@
 COT is the acronym of Commitments of Traders. COT data are published reports to help the public understand market dynamics of the main financial instruments. Learn more [here](https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm).
 
 ### What does jCOT allow you to do?
-jCOT is a Python script that allows you to bulk download all of these data from 1986 to the present. It also allows you to update the current year's data by integrating them when new data are released. And finally it allows you to perform simple search queries to query these data to get their value for a specific instrument at a specific date.
+jCOT is a Python script that allows you to bulk download all of these data from 1986 to the present. It also allows you to update the current year's data by integrating them when new data are released. And finally it allows you to perform simple search queries to query these data, to get their value for a specific instrument at a specific date, or to get their value in a range of two dates.
 
 ### Why can it be useful?
-To make quantitative analysis or to write trading algorithms having these data and easily interrogate them can be convenient. The strong point of jCOT is that it's possible to make searches invoking it through shell (CLI interface) and it is therefore callable and usable by any external software or language. It can be used for example to create an indicator on platforms like MetaTrader or cTrader.
+To make quantitative analysis or to write trading algorithms having these data and easily interrogate them can be convenient. The strong point of jCOT is that it's possible to make searches invoking it through shell (CLI interface) and it is therefore callable and usable by any external software or language. It can be used for example to create an indicator (graph) on platforms like MetaTrader or cTrader.
 
 ### Where do the data come from and how are they stored?
 Data are downloaded from the official website [here](https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm). They are saved on the disk in a folder in the format of Excel (.xsl). This allows you to use them later even without an internet connection.
@@ -65,12 +65,15 @@ All these actions can be carried out through the CLI GUI, simply by opening the 
  * -h: To see an help page similar to this one.
  * -s <symbolCODE>: The symbol code used for a query search. Required. To get this you can first call the program with -l.
  * -d <date>: The date used for a query search. Required. Format dd/mm/yyyy.
+              You can also perform a range data query between two dates. In this case the format will be dateStart:dateStop
+              Where the dateStart and dateStop are in the format dd/mm/yyyy. Range data queries are slow, use it only if needed.
  
  Examples of usage with shell:
  * python jCOT.py -u
  * python jCOT.py -l
  * python jCOT.py -u -s 099741 -d 03/04/2005
  * python jCOT.py -s 099741 -d 05/06/2006
+ * python jCOT.py -s 099741 -d 01/01/2021:31/12/2021
   
 Example of expected output with shell (this is the one produced by the third command in the list above, the data have been updated and a search has been requested for the symbol with code 099741 (corresponding to EURO FX) for the date 03/04/2005):
   
@@ -82,9 +85,12 @@ Example of expected output without shell, using CLI GUI:
   
 ### Understanding the result
 jCOT takes a date and a symbol as input. It searches the reports for the symbol and returns data for the most recent date to the one entered. If, for example, for the symbol EUROFX with code 099741, on 09/02/2016 data was released and also on 16/02/2016. Entering 12/02/2016 as the search date will return the most recent data available, i.e. that of 09/02/2016. If instead you enter 20/02/2016 as the date, you will get those of 16/02/2016.
+in case of search by range, all data released between the two dates entered will be obtained.
 
 ## 🖥️ Modify the data shown as a result (Advanced)
 The data shown are those generally considered most relevant. However, there are many others that are not shown you might be interested in. They can be viewed by opening an Excel file contained in the 'COTData' folder. Each column will correspond to a data. For those familiar with Python programming, it is fairly easy to modify the data shown in the output, by adding more data, or removing the existent ones. Get a Python code editor and open the script. Search (usually you can do this with CTRL + F or CMD + F, but it depends on the editor) for 'Modify the output'. You should find a comment with a '#' and underneath the declaration of a result (dictionary) variable. As you can guess this is the heart of what will be shown. To delete a displayed data, simply delete the related line. To add more data you can add a ',' to the end of a line, wrap and add a new line with the format 'key': value. 'key' must be a string with superscripts. 'value' (without superscripts) will be the value of the data shown. Enter as value 'resultrow["COLUMN_NAME"]' (without superscripts) and instead of COLUMN_NAME put the name of the Excel column you want to output (mantain the quotes). 
+  
+**WARNING**: Do not modify or delete the "MarketName" and "COTDate" row since they are used by the program in the range search system.
   
 Example:
   
