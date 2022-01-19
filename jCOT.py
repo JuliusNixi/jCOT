@@ -6,10 +6,10 @@ from numpy import datetime64, timedelta64
 from bs4 import BeautifulSoup
 from requests import get
 from os.path import isdir, isfile, join
-from os import mkdir, listdir, rename, remove, devnull
+from os import mkdir, listdir, read, rename, remove, devnull
 from os.path import basename
 from sys import exit, argv
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 def Exit():
     input()
@@ -116,7 +116,7 @@ def NoneRow(row):
         return True
     return False
 
-def Search(indate, symbol, getlast = False):
+def Search(indate, symbol, getlast = False, range = False):
     if not isdir(foldername):
         print("Error COTData folder not found. First get the COT data and then retry. Press enter to exit...")
         Exit()
@@ -175,8 +175,14 @@ def Search(indate, symbol, getlast = False):
                     resultrow = lastrow
                     cotdate = td
                 else:
-                    print("Error data not found. Press enter to exit...")
-                    Exit()
+                    resultrow = Search(AddYears(indate, -1), symbol, True)
+                    r = resultrow.head(1)['Report_Date_as_MM_DD_YYYY'].values[0]
+                    ts = (r - datetime64('1970-01-01')) / timedelta64(1, 's')
+                    td = datetime.utcfromtimestamp(ts)
+                    cotdate = td
+                    if len(resultrow.index) == 0:
+                        print("Error the excel file is empty or data not found for the given instrument at the given date. Check the instruments list with -l or try a recent date in the same year. Press enter to exit...")
+                        Exit()
             else:
                 cotdate = resultrow['Report_Date_as_MM_DD_YYYY'].to_pydatetime()
     except Exception as e:
@@ -205,16 +211,10 @@ def Search(indate, symbol, getlast = False):
     except Exception as e:
         print("Error data cannot be parsed. Press enter to exit...")
         Exit()
-    print("""
-
-        ----------------------
-        |        RESULT      |
-        ----------------------
-
-    """)
-    for key in result:
-            print(key + ": " + str(result[key]))
-    print("\n")
+    if not range:
+        PrintResult(result)
+    else:
+        return result
 
 def PrintBanner():
     banner = """
@@ -237,11 +237,10 @@ def PrintSymbols():
         print(symbol)
     print("\n")
 
-
 def UI():
     PrintBanner()
     while 1:
-        choice = input("Do you want to get/update the COT Data? [Y/n]: ")
+        choice = input("Do you want to get/update the COT Data? [Y/n]: ").replace(" ", "")
         if choice == "" or choice[0].lower() == "y":
             CheckData()
             break
@@ -250,7 +249,7 @@ def UI():
         else:
             print("Invalid choice.")
     while 1:
-        choice = input("Do you want to see the avaible symbols? [Y/n]: ")
+        choice = input("Do you want to see the avaible symbols? [Y/n]: ").replace(" ", "")
         if choice == "" or choice[0].lower() == "y":
             PrintSymbols()
             break
@@ -259,23 +258,52 @@ def UI():
         else:
             print("Invalid choice.")
     while 1:
-        indate = input("Insert a date for a search query (type 'q' to quit) (format: dd/mm/yyyy): ")
-        if indate[0].lower() == 'q':
-            print("Bye!")
-            Exit()
+        indate = input("Insert a date for a search query (type 'q' to quit).\nUse 'date' for a direct search or 'date:date' for a range search.\nDate is in format dd/mm/yyyy: ").replace(" ", "")
         edate = ""
+        date1 = ""
+        date2 = ""
         try:
-            edate = datetime.strptime(indate, '%d/%m/%Y')
-        except Exception as e:
-            print("Invalid date.")
-            continue
-        while 1:
-            symbol = input("Insert the symbol for a search query (type 'q' to quit): ")
+            if indate == "":
+                raise Exception("")
             if indate[0].lower() == 'q':
                 print("Bye!")
                 Exit()
-            Search(edate, symbol)
+            if indate.count(':') == 1:
+                date1 = datetime.strptime(indate.split(":")[0], '%d/%m/%Y')
+                date2 = datetime.strptime(indate.split(":")[1], '%d/%m/%Y')
+                if date1 > date2:
+                    raise Exception("")
+            elif indate.count(':') > 1:
+                raise Exception("")
+            else:
+                edate = datetime.strptime(indate, '%d/%m/%Y')
+        except Exception as e:
+            print("Invalid date, wrong format, empty, or start date most recent than stop date.")
+            continue
+        while 1:
+            symbol = input("Insert the symbol for a search query (type 'q' to quit): ").replace(" ", "")
+            if symbol == "":
+                print("Empty symbol.")
+                continue
+            if indate[0].lower() == 'q':
+                print("Bye!")
+                Exit()
+            if edate != "":
+                Search(edate, symbol)
+            elif date1 != "" and date2 != "" and edate == "":
+                RangeSearch(date1, date2, symbol)
             break
+
+def RangeSearch(date1, date2, symbol):
+    print("Range date search require processing a large amount of data, it may take a while, please be patient.\nIf you need the data on a specific date, I recommend doing a direct search.")
+    resultarray = [Search(date1, symbol, range=True)]
+    processdate = datetime.strptime(resultarray[0]["COTDate"], '%d/%m/%y')
+    while (processdate <= date2):
+        processdate += timedelta(days=7)
+        resultarray.append(Search(processdate, symbol, range=True))
+    PrintResult(resultarray[0], printheader=True)
+    for result in resultarray[1:]:
+        PrintResult(result, printheader=False)
 
 def GetSymbols():
     symbols = []
@@ -310,6 +338,22 @@ def GetSymbols():
                 print(f"Error reading {filename} in the COTData folder. Press enter to exit...")
     return symbols
 
+def PrintResult(result, printheader = True):
+    if printheader:
+        print("""
+
+                ----------------------
+                |        RESULT      |
+                ----------------------
+
+        """)
+    separator = ''.join(['-' for e in list("MarketName: " + result["MarketName"])])
+    print(separator)
+    for key in result:
+        print(key + ": " + str(result[key]))
+    print(separator)
+    print('\n')
+
 foldername = "COTData\\"
 if __name__ == '__main__':
     if len(argv) <= 1:
@@ -325,12 +369,15 @@ Args list:
 -u: Get the COT Data or update it if already downloaded, in this last case, it's optional.
 -s <symbolCODE>: The symbol code used for a query search. Required. To get this you can first call the program with -l.
 -d <date>: The date used for a query search. Required. Format dd/mm/yyyy.
+           You can also perform a range data query between two dates. In this case the format will be dateStart:dateStop
+           Where the dateStart and dateStop are in the format dd/mm/yyyy. Range data queries are slow, use it only if needed.
 
 Examples of usage:
 python {basename(__file__)} -u
 python {basename(__file__)} -l
 python {basename(__file__)} -u -s 099741 -d 03/04/2005
 python {basename(__file__)} -s 099741 -d 05/06/2006
+python {basename(__file__)} -s 099741 -d 01/01/2021:31/12/2021
             """)
         elif '-l' in argv or '--l' in argv or '--L' in argv or '-L' in argv:
             PrintBanner()
@@ -339,6 +386,8 @@ python {basename(__file__)} -s 099741 -d 05/06/2006
             PrintBanner()
             symbol = ""
             indate = ""
+            date1 = ""
+            date2 = ""
             update = False
             for i in range(len(argv)):
                 if i == 0:
@@ -354,9 +403,17 @@ python {basename(__file__)} -s 099741 -d 05/06/2006
                         break
                 elif argv[i].lower() == "-d":
                     try:
-                        indate = datetime.strptime(argv[i + 1], '%d/%m/%Y')
+                        if argv[i + 1].count(':') == 1:
+                            date1 = datetime.strptime(argv[i + 1].split(":")[0], '%d/%m/%Y')
+                            date2 = datetime.strptime(argv[i + 1].split(":")[1], '%d/%m/%Y')
+                            if date1 > date2:
+                                raise Exception("")
+                        elif argv[i + 1].count(':') > 1:
+                            raise Exception("")
+                        else:
+                            indate = datetime.strptime(argv[i + 1], '%d/%m/%Y')
                     except Exception as e:
-                        print("Error Wrong arg passed or wrong date. Use -help for info.")
+                        print("Error Wrong arg passed or wrong date or wrong format range date. Use -help for info.")
                         break
                 elif argv[i].lower() == "-u":
                     update = True
@@ -367,10 +424,13 @@ python {basename(__file__)} -s 099741 -d 05/06/2006
                     except Exception as e:
                         print("Error Unrecognized arg passed. Use -help for info.")
                         break
-            if (symbol != "" and indate == "") or (indate == "" and symbol != ""):
+            if (symbol != "" and indate == "" and date1 == "" and date2 == "") or (symbol == "" and (indate != "" or (date1 != "" and date2 != ""))):
                 print("Error missing symbol or date.")
             if update:
                 CheckData()
             if symbol != "" and indate != "":
                 Search(indate, symbol)
+            elif symbol != "" and indate == "" and date1 != "" and date2 != "":
+                RangeSearch(date1, date2, symbol)
+                
 
