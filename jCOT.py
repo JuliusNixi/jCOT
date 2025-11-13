@@ -30,7 +30,7 @@ def GetLinks(year = None):
             raise Exception("")
         pagcont = req.content
         soup = BeautifulSoup(pagcont, "html.parser")
-        atags = soup.find('table', style="width: 501px;").findAll("a")
+        atags = soup.find_all('table')[0].find_all("a")
         linksexcel = []
         for atag in atags:
             if str(atag.text) == "Excel":
